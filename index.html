@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Freezer Overview</title>
+
+  <!-- Theme color for PWA statusbar -->
+  <meta name="theme-color" content="#0f172a"/>
+
+  <!-- App Manifest -->
+  manifest.webmanifest
+
+  <!-- Icons (fallback) -->
+  <link rel="icon" href="icons/icon-192.svg" type="image/svgad>
+<body>
+  <header class="appbar">
+    <div class="left">
+      <h1>Freezer Overview</h1>
+      <select id="freezer-select" title="Vælg fryser"></select>
+    </div>
+    <div class="right">
+      <button id="settings-btn" class="btn secondary">⚙️ Indstillinger</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">Varer</h2>
+        <div class="toolbar">
+          <span class="pill" id="item-count">0 varer</span>
+          <button id="filter-btn" class="btn ghost">🔎 Filter</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <ul class="list" id="item-list"></ul>
+        <div id="empty-items" class="empty" style="display:none;">Ingen varer endnu. Tryk på “+”.</div>
+      </div>
+    </section>
+
+    <aside class="card">
+      <div class="card-header">
+        <h2 class="card-title">Hylder</h2>
+        <div class="toolbar">
+          <button id="add-shelf-btn" class="btn ghost">➕ Tilføj hylde</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="shelves" id="shelf-list"></div>
+        <div id="empty-shelves" class="empty" style="display:none;">Ingen hylder. Opret din første hylde.</div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Floating Action Button -->
+  <button id="fab-add" class="fab" title="Tilføj vare">＋</button>
+
+  <!-- Item Modal -->
+  <div class="modal-backdrop" id="item-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="item-modal-title">
+      <div class="modal-header">
+        <h3 id="item-modal-title">Tilføj / Redigér vare</h3>
+        <button class="btn ghost" data-close="item-backdrop">✖</button>
+      </div>
+      <form id="edit-item-form">
+        <div class="modal-body">
+          <div>
+            <label for="item-name">Navn</label>
+            <input type="text" id="item-name" required placeholder="Fx. Kyllingebryst">
+          </div>
+          <div class="row">
+            <div>
+              <label for="item-quantity">Mængde</label>
+              <input type="number" id="item-quantity" min="0" step="1" value="1" required>
+            </div>
+            <div>
+              <label for="item-shelf">Hylde</label>
+              <select id="item-shelf" required></select>
+            </div>
+          </div>
+
+          <div class="sep"></div>
+
+          <div class="row">
+            <div>
+              <label for="item-notes">Noter (valgfrit)</label>
+              <input type="text" id="item-notes" placeholder="Fx. indfrosset 11/03">
+            </div>
+            <div>
+              <label for="item-photo">Foto</label>
+              <!-- capture="environment" åbner bagkamera -->
+              <input type="file" id="item-photo" accept="image/*" capture="environment">
+              <small class="muted">Du kan tilføje/ændre foto senere fra varekortet.</small>
+            </div>
+          </div>
+
+          <div id="item-photo-preview" class="photo-preview" style="display:none;">
+            <img alt="Varefoto" />
+            <button type="button" id="remove-photo" class="btn danger small">Fjern foto</button>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn ghost" data-close="item-backdrop">Annullér</button>
+          <button type="submit" class="btn">Gem</button>
+        </div>
+
+        <input type="hidden" id="item-id">
+        <input type="hidden" id="item-photo-id">
+      </form>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-backdrop" id="settings-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+      <div class="modal-header">
+        <h3 id="settings-modal-title">Indstillinger</h3>
+        <button class="btn ghost" data-close="settings-backdrop">✖</button>
+      </div>
+      <div class="modal-body">
+        <h4>Frysere</h4>
+        <div id="freezer-admin"></div>
+        <div class="toolbar" style="margin-top:8px;">
+          <button id="add-freezer-btn" class="btn">➕ Ny fryser</button>
+        </div>
+
+        <div class="sep"></div>
+
+        <h4>Generelt</h4>
+        <p class="muted">Omdøb eller slet hylder direkte i “Hylder”-kortet.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" data-close="settings-backdrop">Luk</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Move Items Modal (ved slet hylde) -->
+  <div class="modal-backdrop" id="move-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="move-modal-title">
+      <div class="modal-header">
+        <h3 id="move-modal-title">Flyt varer fra hylde</h3>
+        <button class="btn ghost" data-close="move-backdrop">✖</button>
+      </div>
+      <div class="modal-body">
+        <p id="move-text"></p>
+        <label for="move-target">Flyt til:</label>
+        <select id="move-target"></select>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn ghost" data-close="move-backdrop">Annullér</button>
+        <button type="button" id="move-confirm" class="btn">Flyt & slet hylde</button>
+      </div>
+      <input type="hidden" id="move-shelf-id">
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" aria-live="polite" style="display:none;"></div>
+
+  idb-photos.js</script>
+  app.js</script>
+  <script>
+    // Registrér service worker for offline + install
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js').catch(console.error);
+      });
+    }
+  </script>
+</body>
+</html>
